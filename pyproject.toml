@@ -23,7 +23,6 @@ dev = [
 
 [project.scripts]
 openjev = "openjev.server:main"
-openjev-daemon = "openjev.daemon:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["openjev"]

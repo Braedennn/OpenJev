@@ -27,7 +27,8 @@ DeepSeek.
 
 - Windows 10/11 x64
 - Node.js 22.19+ (24 LTS recommended) and pnpm 11+ for building from source
-- No daemon, no environment files: the app calls the TypeSafe endpoint directly
+- No background services or environment files: the app calls the TypeSafe
+  endpoint directly
 
 ## Build the desktop app
 
@@ -51,7 +52,7 @@ pnpm start:desktop
 
 ## Run
 
-1. Launch `OpenJev.exe` (or `OpenJev.cmd`).
+1. Launch `OpenJev.exe`.
 2. Add your Jev API key in **Settings → Models → Jev (decision layer)**.
    It is stored in `%USERPROFILE%\.dsh\.credentials.yaml` under the `openjev`
    reference and read live — no restart, no committed file.
@@ -79,9 +80,8 @@ The build is unsigned, so Windows SmartScreen warns on first run
 harness/          dsh fork with OpenJev branding and the Jev conductor package
 harness/packages/openjev/openjev/   the Jev conductor (host plugin, baked into the app)
 openjev/          optional Python Jev client, CLI, and MCP server
-tests/            Python tests for the optional bridge
+tests/            Python tests for the optional client
 tools/            rebrand tooling used to create this fork
-OpenJev.cmd       launcher for the desktop app
 ```
 
 ## Optional: CLI and MCP
