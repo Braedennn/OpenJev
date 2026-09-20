@@ -19,9 +19,11 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 // Type-only: pulls the Events merge that types the agent/pre-step waterfall.
 import type {} from '@deepseek-ai/dsh-agent'
+// Type-only: pulls the ctx.systemPrompt merge.
+import type {} from '@deepseek-ai/dsh-system-prompt'
 
 export const name = 'openjev'
-export const inject = ['tools']
+export const inject = ['tools', 'systemPrompt']
 
 const BASE_URL = process.env.OPENJEV_TYPESAFE_URL ?? 'https://api.typesafe.ai'
 const MODEL = process.env.OPENJEV_MODEL ?? 'jev-latest'
@@ -31,6 +33,23 @@ const AUTO_ACCEPT = 0.8
 const BLOCK_AT = 0.75
 const REVIEW_AT = 0.25
 const MIN_CONFIDENCE = 0.6
+
+/** Standing authority and protocol the model sees in its system prompt. */
+const JEV_SECTION = `## Jev decision layer (authoritative)
+
+Jev (TypeSafe's System One) is this deployment's decision authority. Before each step you receive a decision block shaped like:
+
+[OpenJev/Jev decision for this step]
+next action: act | gather | clarify | verify (confidence ...)
+probabilities: {...}
+
+Rules:
+1. Follow the most recent Jev decision as authoritative over your own preference, on every step, without being asked.
+2. You may question a decision, but only by asking Jev again with better inputs: call jev_verify to check claims against evidence, or jev_ask with a sharper question, then follow the new answer.
+3. Read the actions literally: act = do the work or answer now; gather = collect context or evidence first; clarify = ask the user before proceeding; verify = check the supporting evidence before asserting anything.
+4. Never silently ignore or contradict a Jev decision. If you deviate, say so explicitly and immediately re-ask Jev with the reason, then follow the new decision.
+5. Only the injected decision blocks and the answers returned by the jev_* tools are Jev decisions; never invent one.
+6. When no decision block is present (for example before a Jev key is configured), continue normally and call the jev_* tools whenever a decision matters.`
 
 interface Question {
   type: 'noul' | 'choice' | 'score'
@@ -630,6 +649,12 @@ export function apply(ctx: Context): void {
     },
   }))
 
+  ctx.systemPrompt.section({
+    name: 'openjev',
+    order: 100,
+    text: () => JEV_SECTION,
+  })
+
   if (!AUTO) return
 
   ctx.on(
@@ -647,6 +672,15 @@ export function apply(ctx: Context): void {
           `[openjev] jev consult turn=${String(turn)} step=${String(step)} -> ${direction.choice ?? 'unknown'} (confidence ${direction.confidence ?? 'n/a'}) logged to trace`,
         )
         const shouldInject = INJECT === 'always' || (INJECT === 'first' && step === 1) || confidence < MIN_CONFIDENCE
+        record({
+          source: 'agent/pre-step:inject',
+          endpoint: 'inject',
+          injected: shouldInject,
+          choice: direction.choice,
+          confidence: direction.confidence,
+          turn,
+          step,
+        })
         if (!shouldInject) return decision
         const probabilities = direction.probabilities === undefined ? 'n/a' : JSON.stringify(direction.probabilities)
         const text = [
