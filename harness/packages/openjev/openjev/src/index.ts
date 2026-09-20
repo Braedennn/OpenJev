@@ -49,7 +49,8 @@ Rules:
 3. Read the actions literally: act = do the work or answer now; gather = collect context or evidence first; clarify = ask the user before proceeding; verify = check the supporting evidence before asserting anything.
 4. Never silently ignore or contradict a Jev decision. If you deviate, say so explicitly and immediately re-ask Jev with the reason, then follow the new decision.
 5. Only the injected decision blocks and the answers returned by the jev_* tools are Jev decisions; never invent one.
-6. When no decision block is present (for example before a Jev key is configured), continue normally and call the jev_* tools whenever a decision matters.`
+6. When no decision block is present (for example before a Jev key is configured), continue normally and call the jev_* tools whenever a decision matters.
+7. When you call any jev_* tool, pass Jev the fullest relevant context: the task and its constraints, the exact claims and their evidence with sources, the candidate options you are choosing between, and any earlier Jev decisions on this task. Jev is far more accurate with complete state than with a summary; omit only what is truly irrelevant, and never strip qualifiers, numbers, or source attribution.`
 
 interface Question {
   type: 'noul' | 'choice' | 'score'
@@ -522,16 +523,61 @@ function lastUserText(messages: readonly unknown[]): string | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index] as { role?: string; content?: unknown }
     if (message?.role !== 'user') continue
-    if (typeof message.content === 'string') return message.content.slice(0, 4000)
-    if (Array.isArray(message.content)) {
-      const text = message.content
-        .map(part => (part as { type?: string; text?: string }).type === 'text' ? (part as { text?: string }).text ?? '' : '')
-        .join('\n')
-        .trim()
-      if (text !== '') return text.slice(0, 4000)
-    }
+    const text = contentText(message.content)
+    if (text !== undefined) return text.slice(0, 4000)
   }
   return undefined
+}
+
+function contentText(content: unknown): string | undefined {
+  if (typeof content === 'string') return content.trim() === '' ? undefined : content
+  if (Array.isArray(content)) {
+    const text = content
+      .map(part => (part as { type?: string; text?: string }).type === 'text' ? (part as { text?: string }).text ?? '' : '')
+      .join('\n')
+      .trim()
+    if (text !== '') return text
+  }
+  return undefined
+}
+
+/** Last task text per agent, so continuation steps keep the original context. */
+const lastTasks = new Map<string, string>()
+
+/**
+ * Build the richest practical state for one consultation: the task, every
+ * message claimed for the step, the position, and the workspace, capped to a
+ * token-friendly budget.
+ */
+function stateFor(
+  agent: unknown,
+  claimed: readonly unknown[],
+  stepMessages: readonly unknown[],
+  turn: number,
+  step: number,
+): string | undefined {
+  const agentId = String((agent as { id?: unknown })?.id ?? 'agent')
+  const task = lastUserText(claimed) ?? lastUserText(stepMessages) ?? lastTasks.get(agentId)
+  if (task !== undefined) lastTasks.set(agentId, task)
+  const seen = new Set<string>()
+  const lines: string[] = []
+  for (const message of [...claimed, ...stepMessages]) {
+    const role = String((message as { role?: unknown })?.role ?? 'user')
+    const text = contentText((message as { content?: unknown })?.content)
+    if (text === undefined) continue
+    const line = `${role}: ${text}`
+    if (seen.has(line)) continue
+    seen.add(line)
+    lines.push(line)
+  }
+  const parts = [
+    task === undefined ? undefined : `TASK: ${task}`,
+    lines.length === 0 ? undefined : `STEP MESSAGES:\n${lines.join('\n')}`,
+    `POSITION: turn ${String(turn)}, step ${String(step)}`,
+    `WORKSPACE: ${process.cwd()}`,
+  ].filter((part): part is string => part !== undefined)
+  const state = parts.join('\n\n').slice(0, 6000)
+  return state === '' ? undefined : state
 }
 
 /** Register the Jev tools and the per-step conductor. */
@@ -659,13 +705,13 @@ export function apply(ctx: Context): void {
 
   ctx.on(
     'agent/pre-step',
-    async ({ messages: claimed, turn, step, signal }, next) => {
+    async ({ agent, messages: claimed, turn, step, signal }, next) => {
       const decision = await next()
       if (decision.kind === 'reject' || signal.aborted) return decision
-      const task = lastUserText(claimed) ?? lastUserText(decision.messages)
-      if (task === undefined) return decision
+      const state = stateFor(agent, claimed, decision.messages, turn, step)
+      if (state === undefined) return decision
       try {
-        const result = await consult(task, `agent/pre-step:turn=${String(turn)} step=${String(step)}`)
+        const result = await consult(state, `agent/pre-step:turn=${String(turn)} step=${String(step)}`)
         const direction = result.direction ?? {}
         const confidence = direction.confidence ?? 1
         console.log(
