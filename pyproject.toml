@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openjev"
+version = "0.1.0"
+description = "OpenJev: Jev-governed harness for any AI. MCP decision tools + conductor loop."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "OpenJev" }]
+keywords = ["mcp", "jev", "llm", "agent", "harness"]
+dependencies = [
+    "mcp>=1.0.0",
+    "jev-studio>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.6.0",
+]
+
+[project.scripts]
+openjev = "openjev.server:main"
+openjev-daemon = "openjev.daemon:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["openjev"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]
