@@ -107,7 +107,7 @@ export const en = {
   onboardingSaving: 'Saving…',
   keyRequired: 'Enter an API key to continue.',
   jevTitle: 'Jev (decision layer)',
-  jevIntro: 'TypeSafe Jev API key. Every agent step is routed through Jev; the key is stored locally in .credentials.yaml, never in the repository.',
+  jevIntro: 'TypeSafe Jev API key. Every agent step is routed through Jev; the key is stored locally.',
   jevKeyPlaceholder: 'Enter your Jev API key',
   jevSave: 'Save key',
   jevSaving: 'Saving…',
@@ -115,6 +115,11 @@ export const en = {
   jevKeyRequired: 'Enter the Jev API key first.',
   jevConfigured: 'Jev key configured',
   jevMissing: 'Jev key not configured',
+  jevMissingNotice: 'No Jev API key stored yet. Add it here to enable Jev decisions on every step.',
+  jevOnboardingTitle: 'Add your Jev API key',
+  jevOnboardingBody: 'Jev is the decision layer for every agent step. Store your TypeSafe Jev API key to enable it. You can change it any time under Settings → Models.',
+  jevOnboardingSave: 'Save key',
+  jevOnboardingLater: 'Set up later',
 }
 
 /** The settings.models namespace key union. */
@@ -227,7 +232,7 @@ export const zh: { [Key in keyof typeof en]: string } = {
   onboardingSaving: '保存中…',
   keyRequired: '请输入 API 密钥后继续。',
   jevTitle: 'Jev（决策层）',
-  jevIntro: 'TypeSafe Jev API 密钥。每个智能体步骤都会经过 Jev 决策；密钥保存在本机 .credentials.yaml 中，绝不会进入代码仓库。',
+  jevIntro: 'TypeSafe Jev API 密钥。每个智能体步骤都会经过 Jev 决策；密钥保存在本机。',
   jevKeyPlaceholder: '输入你的 Jev API 密钥',
   jevSave: '保存密钥',
   jevSaving: '保存中…',
@@ -235,4 +240,9 @@ export const zh: { [Key in keyof typeof en]: string } = {
   jevKeyRequired: '请先输入 Jev API 密钥。',
   jevConfigured: 'Jev 密钥已配置',
   jevMissing: 'Jev 密钥未配置',
+  jevMissingNotice: '尚未保存 Jev API 密钥。在此填入后，每个步骤都会启用 Jev 决策。',
+  jevOnboardingTitle: '添加你的 Jev API 密钥',
+  jevOnboardingBody: 'Jev 是每个智能体步骤的决策层。保存 TypeSafe Jev API 密钥即可启用。之后可随时在“设置 → 模型”中修改。',
+  jevOnboardingSave: '保存密钥',
+  jevOnboardingLater: '稍后设置',
 }

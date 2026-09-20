@@ -19,6 +19,8 @@ import { ModelsSection } from './ModelsSection.tsx'
 import type { ModelsSectionInjected } from './ModelsSection.tsx'
 import { DeepSeekOnboardingDialog } from './DeepSeekOnboardingDialog.tsx'
 import type { DeepSeekOnboardingInjected } from './DeepSeekOnboardingDialog.tsx'
+import { JevOnboardingDialog } from './JevOnboardingDialog.tsx'
+import type { JevOnboardingInjected } from './JevOnboardingDialog.tsx'
 import { WelcomeNotice } from './WelcomeNotice.tsx'
 import type { WelcomeNoticeInjected } from './WelcomeNotice.tsx'
 import { decodeWelcomeSection, WelcomeNoticeStore } from './welcome-store.ts'
@@ -97,6 +99,10 @@ export function apply(ctx: ClientContext): void {
     schema,
     t,
   })
+  const jevOnboardingInjected = (): JevOnboardingInjected => ({
+    operations,
+    t,
+  })
   // The scope's own memory mode is what keeps a remote browser process-local,
   // so the store needs no isLoopback branch of its own.
   const welcomeController = new WelcomeNoticeStore(ctx.settingsScope.bind({
@@ -151,4 +157,10 @@ export function apply(ctx: ClientContext): void {
     order: 0,
     inject: deepSeekOnboardingInjected,
   }, DeepSeekOnboardingDialog))
+  ctx.slots.inject('settings.onboarding', () => ctx.slots.register({
+    name: 'settings.onboarding',
+    id: 'openjev-key',
+    order: 10,
+    inject: jevOnboardingInjected,
+  }, JevOnboardingDialog))
 }

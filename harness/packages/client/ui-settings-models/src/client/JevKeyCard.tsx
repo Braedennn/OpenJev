@@ -116,6 +116,9 @@ export function JevKeyCard({ operations, t, readOnly, onChanged }: JevKeyCardPro
         )}
       </div>
       <p className={styles['intro']}>{t('jevIntro')}</p>
+      {configured === false
+        ? <p role="status" className={styles['notice']}>{t('jevMissingNotice')}</p>
+        : null}
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('keyInput')}</span>
         <input
