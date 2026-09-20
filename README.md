@@ -17,17 +17,17 @@ DeepSeek.
   notice, and every consultation is appended to a trace log as proof.
 - **Jev tools for the model** — `jev_ask`, `jev_verify`, `jev_screen`,
   `jev_classify`, `jev_route`, `jev_trace`.
-- **Correct question formatting** — questions go through the bundled Python
-  bridge (`openjev`), which uses jev-studio's own builders and validators for
-  `noul` / `choice` / `score` question shapes.
+- **Correct question formatting** — the plugin builds every `noul` / `choice` /
+  `score` question in the exact shape Jev expects before calling the TypeSafe
+  endpoint directly.
 - **Trace log** — `%USERPROFILE%\.openjev\trace.jsonl` records every Jev call:
   source (`agent/pre-step:turn=1 step=2`), latency, probabilities, usage.
 
 ## Requirements
 
 - Windows 10/11 x64
-- Node.js 22.19+ (24 LTS recommended) and pnpm 11+
-- Python 3.10+ (for the Jev bridge)
+- Node.js 22.19+ (24 LTS recommended) and pnpm 11+ for building from source
+- No daemon, no environment files: the app calls the TypeSafe endpoint directly
 
 ## Build the desktop app
 
@@ -51,14 +51,13 @@ pnpm start:desktop
 
 ## Run
 
-1. Start the Jev bridge (once): `pip install -e .` then `openjev-daemon`,
-   or use `OpenJev.cmd` which starts it for you.
-2. Launch `OpenJev.exe`.
-3. Add your Jev API key in **Settings → Models → Jev (decision layer)**.
+1. Launch `OpenJev.exe` (or `OpenJev.cmd`).
+2. Add your Jev API key in **Settings → Models → Jev (decision layer)**.
    It is stored in `%USERPROFILE%\.dsh\.credentials.yaml` under the `openjev`
-   reference — never in a committed file.
-4. Add any model provider (DeepSeek, OpenAI, Anthropic, OpenRouter, Ollama,
-   or any OpenAI-compatible gateway) in **Settings → Models → Add provider**.
+   reference and read live — no restart, no committed file.
+3. Add any model provider (DeepSeek, OpenAI, Anthropic, OpenRouter, a local
+   server, or any OpenAI-compatible gateway) in **Settings → Models → Add
+   provider**.
 
 ## Releases
 
@@ -79,15 +78,17 @@ The build is unsigned, so Windows SmartScreen warns on first run
 ```
 harness/          dsh fork with OpenJev branding and the Jev plugin
 harness/openjev-plugin/   the Jev conductor plugin (host side)
-openjev/          Python Jev bridge: daemon + MCP server + typed Jev client
-tests/            Python tests for the bridge
+openjev/          optional Python Jev client, CLI, and MCP server
+tests/            Python tests for the optional bridge
 tools/            rebrand tooling used to create this fork
-OpenJev.cmd       launcher (starts the bridge, then the desktop app)
+OpenJev.cmd       launcher for the desktop app
 ```
 
 ## Optional: CLI and MCP
 
-The Python bridge also exposes the Jev decisions as a CLI and an MCP server:
+The Python package in this repository is a convenience for command-line and MCP
+use; the desktop app does not need it. It reads the same key the Settings card
+stores:
 
 ```sh
 pip install -e .
