@@ -76,8 +76,8 @@ The build is unsigned, so Windows SmartScreen warns on first run
 ## Repository layout
 
 ```
-harness/          dsh fork with OpenJev branding and the Jev plugin
-harness/openjev-plugin/   the Jev conductor plugin (host side)
+harness/          dsh fork with OpenJev branding and the Jev conductor package
+harness/packages/openjev/openjev/   the Jev conductor (host plugin, baked into the app)
 openjev/          optional Python Jev client, CLI, and MCP server
 tests/            Python tests for the optional bridge
 tools/            rebrand tooling used to create this fork

@@ -1,8 +1,9 @@
 /**
  * Jev (TypeSafe) decision-layer credential card: stores the Jev API key in
- * the harness credential document under a fixed reference, which the local
- * Jev bridge reads at startup. This keeps the key out of the repository and
- * out of hand-edited env files.
+ * the harness credential document under a fixed reference, which the conductor
+ * reads live. This keeps the key out of the repository and out of hand-edited
+ * env files. Once configured the row collapses to a status row, mirroring the
+ * provider rows above it.
  */
 
 import { useEffect, useState } from 'react'
@@ -11,7 +12,7 @@ import type { ModelsOperations } from './operations.ts'
 import type { ModelsKey } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
-/** Credential reference the Jev bridge reads from `.credentials.yaml`. */
+/** Credential reference the conductor reads from `.credentials.yaml`. */
 export const JEV_CREDENTIAL_REF = 'openjev'
 
 /** Props of {@link JevKeyCard}. */
@@ -34,13 +35,17 @@ export interface JevKeyCardProps {
 export function JevKeyCard({ operations, t, readOnly, onChanged }: JevKeyCardProps): ReactNode {
   const [draft, setDraft] = useState('')
   const [configured, setConfigured] = useState<boolean | undefined>(undefined)
+  const [editing, setEditing] = useState(false)
   const [failure, setFailure] = useState<string | undefined>(undefined)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let live = true
     void operations.describeCredential(JEV_CREDENTIAL_REF).then((info) => {
-      if (live) setConfigured(info?.configured === true)
+      if (!live) return
+      const has = info?.configured === true
+      setConfigured(has)
+      setEditing(!has)
     })
     return () => { live = false }
   }, [operations])
@@ -60,6 +65,7 @@ export function JevKeyCard({ operations, t, readOnly, onChanged }: JevKeyCardPro
     }
     setDraft('')
     setConfigured(true)
+    setEditing(false)
     setFailure(undefined)
     onChanged()
   }
@@ -73,9 +79,12 @@ export function JevKeyCard({ operations, t, readOnly, onChanged }: JevKeyCardPro
       return
     }
     setConfigured(false)
+    setEditing(true)
     setFailure(undefined)
     onChanged()
   }
+
+  const showInput = editing || configured !== true
 
   return (
     <li className={styles['rowCard']}>
@@ -106,6 +115,17 @@ export function JevKeyCard({ operations, t, readOnly, onChanged }: JevKeyCardPro
           <span className={styles['rowActions']}>
             <button
               type="button"
+              className={styles['secondaryButton']}
+              disabled={busy || readOnly || editing}
+              onClick={() => {
+                setFailure(undefined)
+                setEditing(true)
+              }}
+            >
+              {t('edit')}
+            </button>
+            <button
+              type="button"
               className={styles['dangerButton']}
               disabled={busy || readOnly}
               onClick={() => { void remove() }}
@@ -119,27 +139,47 @@ export function JevKeyCard({ operations, t, readOnly, onChanged }: JevKeyCardPro
       {configured === false
         ? <p role="status" className={styles['notice']}>{t('jevMissingNotice')}</p>
         : null}
-      <div className={styles['field']}>
-        <span className={styles['fieldLabel']}>{t('keyInput')}</span>
-        <input
-          className={styles['input']}
-          type="password"
-          value={draft}
-          placeholder={t('jevKeyPlaceholder')}
-          disabled={busy || readOnly}
-          onChange={(event) => { setDraft(event.target.value) }}
-        />
-      </div>
-      <div className={styles['rowActions']}>
-        <button
-          type="button"
-          className={styles['secondaryButton']}
-          disabled={busy || readOnly}
-          onClick={() => { void save() }}
-        >
-          {busy ? t('jevSaving') : t('jevSave')}
-        </button>
-      </div>
+      {showInput
+        ? (
+          <>
+            <div className={styles['field']}>
+              <span className={styles['fieldLabel']}>{t('keyInput')}</span>
+              <input
+                className={styles['input']}
+                type="password"
+                value={draft}
+                placeholder={t('jevKeyPlaceholder')}
+                disabled={busy || readOnly}
+                onChange={(event) => { setDraft(event.target.value) }}
+              />
+            </div>
+            <div className={styles['rowActions']}>
+              <button
+                type="button"
+                className={styles['secondaryButton']}
+                disabled={busy || readOnly}
+                onClick={() => { void save() }}
+              >
+                {busy ? t('jevSaving') : t('jevSave')}
+              </button>
+              {configured === true && (
+                <button
+                  type="button"
+                  className={styles['secondaryButton']}
+                  disabled={busy || readOnly}
+                  onClick={() => {
+                    setDraft('')
+                    setFailure(undefined)
+                    setEditing(false)
+                  }}
+                >
+                  {t('cancel')}
+                </button>
+              )}
+            </div>
+          </>
+        )
+        : null}
       {failure === undefined ? null : <p role="alert" className={styles['error']}>{failure}</p>}
     </li>
   )

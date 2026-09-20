@@ -510,3 +510,9 @@
     # choice.
     - id: llm-deepseek
       name: '@deepseek-ai/dsh-llm-deepseek'
+
+    # OpenJev: Jev is consulted on every thinking step. The package builds the
+    # noul/choice/score questions itself, reads the key the Models page stored
+    # in $DSH_HOME/.credentials.yaml, and appends every call to the trace log.
+    - id: openjev
+      name: '@deepseek-ai/dsh-openjev'
